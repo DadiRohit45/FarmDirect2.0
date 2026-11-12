@@ -1,0 +1,149 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --ivory: #F2EBDD;
+    --sage: #78947F;
+    --emerald: #185844;
+    --forest: #102F27;
+    --gold: #B08A4F;
+  }
+  html {
+    scroll-behavior: smooth;
+    background-color: #F2EBDD;
+    color: #102F27;
+  }
+  body {
+    @apply antialiased overflow-x-hidden;
+    background-color: #F2EBDD;
+    color: #102F27;
+  }
+  ::selection {
+    background-color: #185844;
+    color: #F2EBDD;
+  }
+}
+
+/* Card and surface styling override to eliminate stark pure white */
+.bg-white {
+  background-color: #FAF6EF !important;
+}
+
+/* Base inputs, selects and textareas */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+select,
+textarea {
+  background-color: #FAF6EF;
+  color: #102F27;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+select:focus,
+textarea:focus {
+  border-color: #185844;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(24, 88, 68, 0.25);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(120, 148, 127, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #185844;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #102F27;
+}
+
+/* Custom range sliders styling */
+input[type="range"] {
+  accent-color: #185844;
+}
+
+/* Glassmorphism helpers */
+.glass-panel {
+  background: rgba(242, 235, 221, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(120, 148, 127, 0.3);
+}
+
+.glass-card {
+  background: rgba(250, 246, 239, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(120, 148, 127, 0.25);
+}
+
+/* Keyframe animations */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(24, 88, 68, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(176, 138, 79, 0.35);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1.5deg);
+  }
+}
+
+@keyframes floatReverse {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(8px) rotate(-1.5deg);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.glow-interactive {
+  animation: pulseGlow 4s infinite ease-in-out;
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: floatReverse 5s ease-in-out infinite;
+}
+
+.shimmer-text {
+  background: linear-gradient(90deg, #185844 0%, #B08A4F 50%, #185844 100%);
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shimmer 4s linear infinite;
+}
