@@ -10,5 +10,6 @@ urlpatterns = [
     path('zones/', views.get_zones, name='get_zones'),
     path('orders/', views.orders_view, name='orders_view'),
     path('products/', views.get_products, name='get_products'),
+    path('ai/gemini/', views.gemini_chat, name='gemini_chat'),
 ]
 

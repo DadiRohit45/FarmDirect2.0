@@ -1,8 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-// In browser development, route through same-origin Vite proxy to eliminate CORS preflight & bypass ISP DNS hijacking
+// In local browser development on localhost, route through same-origin Vite proxy to eliminate CORS preflight & bypass ISP DNS hijacking
+// In production (Vercel), connect directly to VITE_SUPABASE_URL
 const isBrowser = typeof window !== 'undefined';
-const supabaseUrl = (isBrowser && window.location?.origin)
+const isLocalhost = isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const supabaseUrl = isLocalhost
   ? `${window.location.origin}/supabase-proxy`
   : ((typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || 'https://dqvuxqcpvkjmnslxnvrp.supabase.co');
 

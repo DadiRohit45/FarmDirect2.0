@@ -19,6 +19,13 @@ dist-ssr/
 !.env.example
 backend/.env
 backend/.env.*
+!backend/.env.example
+
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
 
 # Python & Django
 __pycache__/
@@ -26,7 +33,10 @@ __pycache__/
 *$py.class
 *.sqlite3
 backend/db.sqlite3
+staticfiles/
 backend/staticfiles/
+media/
+backend/media/
 .pytest_cache/
 
 # Editor directories and files

@@ -1,8 +1,11 @@
 /**
  * FarmDirect 2.0 — Google Gemini AI Integration Client
  * 
- * Replaces Ollama with Google Gemini API for intelligent, grounded, and conversational responses.
+ * Proxies AI generation through the Django backend (/api/ai/gemini/)
+ * ensuring private GEMINI_API_KEY is never exposed in client bundles.
  */
+
+import { getBackendUrl } from './apiConfig.js';
 
 const STORAGE_KEY_GEMINI_KEY = 'farmdirect_gemini_api_key';
 const STORAGE_KEY_GEMINI_MODEL = 'farmdirect_gemini_model';
@@ -10,16 +13,15 @@ const STORAGE_KEY_GEMINI_MODEL = 'farmdirect_gemini_model';
 const DEFAULT_MODEL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_MODEL) || 'gemini-1.5-flash';
 
 export function getGeminiConfig() {
-  const envKey = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY) || '';
   if (typeof window === 'undefined') {
-    return { apiKey: envKey, model: DEFAULT_MODEL };
+    return { apiKey: '', model: DEFAULT_MODEL };
   }
 
   const storedKey = localStorage.getItem(STORAGE_KEY_GEMINI_KEY);
   const storedModel = localStorage.getItem(STORAGE_KEY_GEMINI_MODEL);
 
   return {
-    apiKey: storedKey || envKey || '',
+    apiKey: storedKey || '',
     model: storedModel || DEFAULT_MODEL
   };
 }
@@ -31,7 +33,7 @@ export function saveGeminiConfig({ apiKey, model }) {
 }
 
 /**
- * Generate completion via Google Gemini REST API
+ * Generate completion via secure Django backend proxy or client fallback
  * @param {Object} params
  * @param {string} params.prompt - Single prompt or latest query
  * @param {Array} [params.messages] - Multi-turn conversation messages array [{ role: 'user'|'assistant', content: string }]
@@ -44,15 +46,47 @@ export async function generateGeminiResponse({
   systemPrompt = ''
 }) {
   const config = getGeminiConfig();
-  const apiKey = config.apiKey;
+  const model = config.model || DEFAULT_MODEL;
 
-  if (!apiKey) {
-    // No API key provided; signal caller to use grounded local synthesis
+  // 1. Primary Secure Path: Proxy through Django backend (reads GEMINI_API_KEY securely from server environment)
+  const backendEndpoint = getBackendUrl('/api/ai/gemini/');
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 18000);
+
+  try {
+    const backendRes = await fetch(backendEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, messages, systemPrompt, model }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (backendRes.ok) {
+      const data = await backendRes.json();
+      if (data && data.text) {
+        return {
+          text: data.text.trim(),
+          model: data.model || model
+        };
+      }
+    }
+  } catch (err) {
+    clearTimeout(timeoutId);
+    console.warn('Backend Gemini proxy notice (falling back if client key available):', err.message);
+  }
+
+  // 2. Client-Side Override Fallback (only if user explicitly provided a personal key in localStorage)
+  const clientKey = config.apiKey;
+  if (!clientKey) {
+    // No backend key and no client override: signal caller to use grounded local synthesis
     return null;
   }
 
-  const model = config.model || DEFAULT_MODEL;
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const directEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${clientKey}`;
+  const directController = new AbortController();
+  const directTimeoutId = setTimeout(() => directController.abort(), 18000);
 
   // Format messages for Gemini API
   const contents = [];
@@ -70,7 +104,6 @@ export async function generateGeminiResponse({
     }
   }
 
-  // Ensure latest user prompt is present
   if (contents.length === 0 || contents[contents.length - 1].role !== 'user') {
     contents.push({
       role: 'user',
@@ -93,22 +126,17 @@ export async function generateGeminiResponse({
     };
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 18000);
-
   try {
-    const res = await fetch(endpoint, {
+    const res = await fetch(directEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-      signal: controller.signal
+      signal: directController.signal
     });
 
-    clearTimeout(timeoutId);
+    clearTimeout(directTimeoutId);
 
     if (!res.ok) {
-      const errBody = await res.text();
-      console.warn('Gemini API returned non-OK status:', res.status, errBody);
       return null;
     }
 
@@ -125,9 +153,8 @@ export async function generateGeminiResponse({
       model
     };
   } catch (err) {
-    clearTimeout(timeoutId);
-    console.warn('Gemini request failed:', err.message);
+    clearTimeout(directTimeoutId);
+    console.warn('Direct Gemini request notice:', err.message);
     return null;
   }
 }
-
